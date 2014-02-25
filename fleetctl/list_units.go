@@ -7,6 +7,7 @@ import (
 	"github.com/coreos/fleet/third_party/github.com/codegangsta/cli"
 
 	"github.com/coreos/fleet/job"
+	"github.com/coreos/fleet/signing"
 )
 
 func newListUnitsCommand() cli.Command {
@@ -24,12 +25,19 @@ fleetctl list-units --full`,
 		Flags: []cli.Flag{
 			cli.BoolFlag{"full, l", "Do not ellipsize fields on output"},
 			cli.BoolFlag{"no-legend", "Do not print a legend (column headers)"},
+			cli.StringFlag{"verify", "yes", "Verify unit file (`yes` or `no`)"},
 		},
 	}
 }
 
 func listUnitsAction(c *cli.Context) {
 	r := getRegistry(c)
+	s := signing.New(r)
+
+	verify := c.String("verify") == "yes"
+	if verify {
+		s.SetVerifyBySSHAgent()
+	}
 
 	if !c.Bool("no-legend") {
 		fmt.Fprintln(out, "UNIT\tLOAD\tACTIVE\tSUB\tDESC\tMACHINE")
@@ -39,6 +47,13 @@ func listUnitsAction(c *cli.Context) {
 	sortable := make(sort.StringSlice, 0)
 
 	for _, p := range r.GetAllPayloads() {
+		if verify {
+			ok, err := s.VerifyPayload(&p)
+			if !ok || err != nil {
+				fmt.Printf("Check of payload %s failed: %v\n", p.Name, err)
+				return
+			}
+		}
 		if _, ok := names[p.Name]; !ok {
 			names[p.Name] = p.Unit.Description()
 			sortable = append(sortable, p.Name)

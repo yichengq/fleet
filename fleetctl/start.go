@@ -8,6 +8,7 @@ import (
 	"github.com/coreos/fleet/third_party/github.com/codegangsta/cli"
 
 	"github.com/coreos/fleet/job"
+	"github.com/coreos/fleet/signing"
 )
 
 func newStartUnitCommand() cli.Command {
@@ -31,6 +32,8 @@ Start a unit on any "us-east" machine:
 fleetctl start --require region=us-east foo.service`,
 		Flags: []cli.Flag{
 			cli.StringFlag{"require", "", "Filter suitable hosts with a set of requirements. Format is comma-delimited list of <key>=<value> pairs."},
+			cli.StringFlag{"sign", "yes", "Sign unit file (`yes` or `no`)"},
+			cli.StringFlag{"verify", "yes", "Verify unit file (`yes` or `no`)"},
 		},
 		Action:	startUnitAction,
 	}
@@ -39,11 +42,26 @@ fleetctl start --require region=us-east foo.service`,
 func startUnitAction(c *cli.Context) {
 	var err error
 	r := getRegistry(c)
+	s := signing.New(r)
+
+	sign := c.String("sign") == "yes"
+	verify := c.String("verify") == "yes"
+	if sign {
+		s.SetSignBySSHAgent()
+		s.SetVerifyBySSHAgent()
+	}
 
 	payloads := make([]job.JobPayload, len(c.Args()))
 	for i, v := range c.Args() {
 		name := path.Base(v)
 		payload := r.GetPayload(name)
+		if verify {
+			ok, err := s.VerifyPayload(payload)
+			if !ok || err != nil {
+				fmt.Printf("Check of payload %s failed: %v\n", payload.Name, err)
+				return
+			}
+		}
 		if payload == nil {
 			payload, err = getJobPayloadFromFile(v)
 			if err != nil {
@@ -55,6 +73,13 @@ func startUnitAction(c *cli.Context) {
 			if err != nil {
 				fmt.Printf("Creation of payload %s failed: %v\n", payload.Name, err)
 				return
+			}
+			if sign {
+				err = s.RegisterPayload(payload)
+				if err != nil {
+					fmt.Printf("Creation of sign for payload %s failed: %v\n", payload.Name, err)
+					return
+				}
 			}
 		}
 

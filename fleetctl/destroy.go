@@ -4,6 +4,8 @@ import (
 	"path"
 
 	"github.com/coreos/fleet/third_party/github.com/codegangsta/cli"
+
+	"github.com/coreos/fleet/signing"
 )
 
 func newDestroyUnitCommand() cli.Command {
@@ -23,10 +25,12 @@ Destroyed units are impossible to start unless re-submitted.`,
 
 func destroyUnitsAction(c *cli.Context) {
 	r := getRegistry(c)
+	s := signing.New(r)
 
 	for _, v := range c.Args() {
 		name := path.Base(v)
 		r.StopJob(name)
 		r.DestroyPayload(name)
+		s.DeregisterPayload(name)
 	}
 }

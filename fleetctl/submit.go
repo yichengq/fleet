@@ -6,6 +6,7 @@ import (
 	"github.com/coreos/fleet/third_party/github.com/codegangsta/cli"
 
 	"github.com/coreos/fleet/job"
+	"github.com/coreos/fleet/signing"
 )
 
 func newSubmitUnitCommand() cli.Command {
@@ -20,12 +21,21 @@ fleetctl submit foo.service
 
 Submit a directory of units with glob matching:
 fleetctl submit myservice/*`,
+		Flags:	[]cli.Flag{
+			cli.StringFlag{"sign", "yes", "Sign unit file (`yes` or `no`)"},
+		},
 		Action:	submitUnitsAction,
 	}
 }
 
 func submitUnitsAction(c *cli.Context) {
 	r := getRegistry(c)
+	s := signing.New(r)
+
+	sign := c.String("sign") == "yes"
+	if sign {
+		s.SetSignBySSHAgent()
+	}
 
 	// First, validate each of the provided payloads
 	payloads := make([]job.JobPayload, len(c.Args()))
@@ -45,6 +55,13 @@ func submitUnitsAction(c *cli.Context) {
 		if err != nil {
 			fmt.Printf("Creation of payload %s failed: %v\n", payload.Name, err)
 			return
+		}
+		if sign {
+			err = s.RegisterPayload(&payload)
+			if err != nil {
+				fmt.Printf("Creation of sign for payload %s failed: %v\n", payload.Name, err)
+				return
+			}
 		}
 	}
 }
