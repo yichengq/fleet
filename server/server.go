@@ -28,6 +28,8 @@ func New(cfg config.Config) *Server {
 	regClient.SetConsistency(etcd.STRONG_CONSISTENCY)
 	r := registry.New(regClient)
 
+	registry.AuthorizedKeyFile = cfg.AuthorizedKeyFile
+
 	eb := event.NewEventBus()
 	eb.Listen()
 

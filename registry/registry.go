@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	gossh "github.com/coreos/fleet/third_party/code.google.com/p/go.crypto/ssh"
+
 	"github.com/coreos/fleet/third_party/github.com/coreos/go-etcd/etcd"
 )
 
@@ -14,10 +16,14 @@ const (
 
 type Registry struct {
 	etcd *etcd.Client
+	// keyring is used to sign data, created when needed
+	keyring gossh.ClientKeyring
+	// authKeys is used to verify signing, created when needed
+	authKeys []gossh.PublicKey
 }
 
 func New(client *etcd.Client) (registry *Registry) {
-	return &Registry{client}
+	return &Registry{client, nil, nil}
 }
 
 func marshal(obj interface{}) (string, error) {

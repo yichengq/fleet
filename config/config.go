@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	BootId      string
-	EtcdServers []string
-	PublicIP    string
-	Verbosity   int
-	RawMetadata string
-	UnitPrefix  string
-	AgentTTL    string
+	BootId            string
+	EtcdServers       []string
+	PublicIP          string
+	Verbosity         int
+	RawMetadata       string
+	UnitPrefix        string
+	AgentTTL          string
+	AuthorizedKeyFile string
 }
 
 func NewConfig() *Config {

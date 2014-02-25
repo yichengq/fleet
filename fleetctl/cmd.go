@@ -84,6 +84,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{"endpoint", "http://127.0.0.1:4001", "Fleet Engine API endpoint (etcd)"},
 		cli.StringFlag{"tunnel", "", "Establish an SSH tunnel through the provided address for communication with fleet and etcd."},
+		cli.StringFlag{"authorized_key_file", registry.DefaultAuthorizedKeyFile, "File that contains authorized keys"},
 	}
 
 	app.Commands = []cli.Command{
@@ -111,6 +112,7 @@ func main() {
 		fmt.Println("fleetctl version", version.Version)
 		os.Exit(0)
 	}
+	registry.AuthorizedKeyFile = (*flagset.Lookup("authorized_key_file")).Value.(flag.Getter).Get().(string)
 
 	globalconf.Register("fleetctl", flagset)
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/coreos/fleet/agent"
 	"github.com/coreos/fleet/config"
+	"github.com/coreos/fleet/registry"
 	"github.com/coreos/fleet/server"
 	"github.com/coreos/fleet/version"
 )
@@ -43,6 +44,7 @@ func main() {
 	cfgset.String("metadata", "", "List of key-value metadata to assign to the fleet machine")
 	cfgset.String("unit_prefix", "", "Prefix that should be used for all systemd units")
 	cfgset.String("agent_ttl", agent.DefaultTTL, "TTL in seconds of fleet machine state in etcd")
+	cfgset.String("authorized_key_file", registry.DefaultAuthorizedKeyFile, "File that contains authorized keys")
 
 	globalconf.Register("", cfgset)
 	cfg, err := getConfig(cfgset, *cfgPath)
@@ -115,6 +117,7 @@ func getConfig(flagset *flag.FlagSet, file string) (*config.Config, error) {
 	cfg.RawMetadata = (*flagset.Lookup("metadata")).Value.(flag.Getter).Get().(string)
 	cfg.UnitPrefix = (*flagset.Lookup("unit_prefix")).Value.(flag.Getter).Get().(string)
 	cfg.AgentTTL = (*flagset.Lookup("agent_ttl")).Value.(flag.Getter).Get().(string)
+	cfg.AuthorizedKeyFile = (*flagset.Lookup("authorized_key_file")).Value.(flag.Getter).Get().(string)
 
 	return cfg, nil
 }
