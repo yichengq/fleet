@@ -24,5 +24,6 @@ type Client interface {
 func NewClient(servers []string) Client {
 	c := goetcd.NewClient(servers)
 	c.SetConsistency(goetcd.STRONG_CONSISTENCY)
+	c.SyncCluster()
 	return c
 }
